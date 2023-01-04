@@ -1,3 +1,5 @@
+import { initState } from "./state";
+
 export function initMixin(Vue) { // 给Vue增加init方法
     Vue.prototype._init = function (options) { // 用于初始化操作
         // vue vm.$options 就是获取用户的配置
@@ -9,15 +11,4 @@ export function initMixin(Vue) { // 给Vue增加init方法
     }
 }
 
-function initState(vm) {
-    const opts = vm.$options; // 获取所有的选项
-    if (opts.data) {
-        initData(vm);
-    }
-}
 
-function initData(vm) {
-    let data = vm.$options.data; // data 可能是函数或对象
-    data = typeof data === 'function' ? data.call(vm) : data
-    console.log(data);
-}

@@ -10,11 +10,19 @@
     <script src="vue.js"></script>
     <script>
         const vm = new Vue({
-            data: {
-                name: 'zf',
-                age: 20,
+            data() {
+                return {
+                    name: 'zf',
+                    age: 20,
+                    address: {
+                        num: 30,
+                        content: '回龙观'
+                    }
+                }
             }
         })
+        console.log(vm);
+
     </script>
 </body>
 </html>
