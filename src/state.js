@@ -13,7 +13,7 @@ function proxy(vm, target, key) {
             return vm[target][key];
         },
         set(newValue) {
-            vm[target][kye] = newValue;
+            vm[target][key] = newValue;
         }
     })
 }

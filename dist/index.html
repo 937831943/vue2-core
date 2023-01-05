@@ -17,12 +17,17 @@
                     address: {
                         num: 30,
                         content: '回龙观'
-                    }
+                    },
+                    hobby: ['eat', 'drank', {a:1}]
                 }
             }
         })
-        console.log(vm);
-
+        vm.name = 'ok';
+        vm.address = {
+            num: 20
+        }
+        vm.hobby.unshift({a:2})
+        console.log(vm.hobby);
     </script>
 </body>
 </html>

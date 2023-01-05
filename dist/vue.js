@@ -50,11 +50,56 @@
     return typeof key === "symbol" ? key : String(key);
   }
 
+  // 对数组中的部分方法进行重写
+
+  var oldArrayPrototype = Array.prototype; // 获取数组的原型
+
+  var newArrayPrototype = Object.create(oldArrayPrototype);
+  var methods = ['push', 'pop', 'shift', 'unshift', 'reverse', 'sort', 'splice']; // 找到所有的变异方法
+
+  methods.forEach(function (method) {
+    newArrayPrototype[method] = function () {
+      var _oldArrayPrototype$me;
+      // 内部调用原来的方法
+      // 函数的劫持 切片编程
+      // 增加自己的功能 ...
+      var inserted;
+      var ob = this.__ob__;
+      for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
+        args[_key] = arguments[_key];
+      }
+      switch (method) {
+        case 'push':
+        case 'unshift':
+          inserted = args;
+          break;
+        case 'splice':
+          inserted = args.splice(2);
+      }
+      if (inserted) {
+        ob.observeArray(inserted);
+      }
+      return (_oldArrayPrototype$me = oldArrayPrototype[method]).call.apply(_oldArrayPrototype$me, [this].concat(args));
+    };
+  });
+
   var Observer = /*#__PURE__*/function () {
     function Observer(data) {
       _classCallCheck(this, Observer);
       // Object.defineProperty只能劫持已经存在的属性（Vue里面会为此单独写一些API $set $delete等）
-      this.walk(data);
+
+      Object.defineProperty(data, '__ob__', {
+        value: this,
+        enumerable: false
+      });
+      if (Array.isArray(data)) {
+        // 重写数组的七个变异方法
+
+        data.__proto__ = newArrayPrototype;
+        this.observeArray(data);
+      } else {
+        this.walk(data);
+      }
     }
     _createClass(Observer, [{
       key: "walk",
@@ -62,6 +107,13 @@
         // 循环对象 对属性依次劫持
         Object.keys(data).forEach(function (key) {
           return defineReactive(data, key, data[key]);
+        });
+      }
+    }, {
+      key: "observeArray",
+      value: function observeArray(data) {
+        data.forEach(function (item) {
+          return observe(item);
         });
       }
     }]);
@@ -76,6 +128,7 @@
       },
       set: function set(newValue) {
         if (newValue === value) return;
+        observe(newValue);
         value = newValue;
       }
     });
@@ -83,6 +136,11 @@
   function observe(data) {
     if (_typeof(data) !== 'object' || data === null) {
       return; // 只对对象进行劫持
+    }
+
+    if (data.__ob__ instanceof Observer) {
+      // 说明这个对象被代理过了
+      return data.__ob__;
     }
 
     // 如果一个对象被劫持过了，那就不需要再被劫持了
@@ -102,7 +160,7 @@
         return vm[target][key];
       },
       set: function set(newValue) {
-        vm[target][kye] = newValue;
+        vm[target][key] = newValue;
       }
     });
   }
