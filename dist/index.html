@@ -7,9 +7,14 @@
     <title>Document</title>
 </head>
 <body>
+    <div id="app">
+        <div>{{name}}</div>
+        <div>{{age}}</div>
+    </div>
     <script src="vue.js"></script>
     <script>
         const vm = new Vue({
+            el: '#app',
             data() {
                 return {
                     name: 'zf',
@@ -20,14 +25,9 @@
                     },
                     hobby: ['eat', 'drank', {a:1}]
                 }
-            }
+            },
+            template: '<div>hello</div>'
         })
-        vm.name = 'ok';
-        vm.address = {
-            num: 20
-        }
-        vm.hobby.unshift({a:2})
-        console.log(vm.hobby);
     </script>
 </body>
 </html>
