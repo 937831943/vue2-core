@@ -8,8 +8,10 @@
 </head>
 <body>
     <div id="app">
-        <div>{{name}}</div>
-        <div>{{age}}</div>
+        <div style="color: red">
+            {{name}}  hello
+        </div>
+        <span> {{age}} </span>
     </div>
     <script src="vue.js"></script>
     <script>
@@ -25,8 +27,7 @@
                     },
                     hobby: ['eat', 'drank', {a:1}]
                 }
-            },
-            template: '<div>hello</div>'
+            }
         })
     </script>
 </body>

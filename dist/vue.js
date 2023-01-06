@@ -4,8 +4,118 @@
     (global = typeof globalThis !== 'undefined' ? globalThis : global || self, global.Vue = factory());
 })(this, (function () { 'use strict';
 
+    var ncname = "[a-zA-Z_][\\-\\.0-9_a-zA-Z]*";
+    var qnameCature = "((?:".concat(ncname, "\\:)?").concat(ncname, ")");
+    var startTagOpen = new RegExp("^<".concat(qnameCature));
+    var endTag = new RegExp("^<\\/".concat(qnameCature, "[^>]*>"));
+    var attribute = /^\s*([^\s"'<>\/=]+)(?:\s*(=)\s*(?:"([^"]*)"+|'([^']*)'+|([^\s"'=<>`]+)))?/;
+    var startTagClose = /^\s*(\/?)>/;
+    function parseHTML(html) {
+      var ELEMENT_TYPE = 1;
+      var TEXT_TYPE = 3;
+      var stack = []; // 用于存放元素的
+      var currentParent; // 指向的是栈中的最后一个元素 
+      var root;
+      // 最终需要转化成一颗抽象语法树
+      function createASTElement(tag, attrs) {
+        return {
+          tag: tag,
+          type: ELEMENT_TYPE,
+          children: [],
+          attrs: attrs,
+          parent: null
+        };
+      }
+      function start(tag, attrs) {
+        var node = createASTElement(tag, attrs);
+        if (!root) {
+          root = node;
+        }
+        if (currentParent) {
+          node.parent = currentParent;
+          currentParent.children.push(node);
+        }
+        stack.push(node);
+        currentParent = node;
+      }
+      function chars(text) {
+        text = text.replace(/\s/g, '');
+        text && currentParent.children.push({
+          type: TEXT_TYPE,
+          text: text,
+          parent: currentParent
+        });
+      }
+      function end(tag) {
+        stack.pop();
+        currentParent = stack[stack.length - 1];
+      }
+      function advance(n) {
+        html = html.substring(n);
+      }
+      function parseStartTag() {
+        var start = html.match(startTagOpen);
+        if (start) {
+          var match = {
+            tagName: start[1],
+            // 标签名
+            attrs: []
+          };
+          advance(start[0].length);
+
+          // 如果不是开始标签 就一直匹配下去
+          var attr, _end;
+          while (!(_end = html.match(startTagClose)) && (attr = html.match(attribute))) {
+            advance(attr[0].length);
+            match.attrs.push({
+              name: attr[1],
+              value: attr[3] || attr[4] || attr[5] || true
+            });
+          }
+          if (_end) {
+            advance(_end[0].length);
+          }
+          return match;
+        }
+        return false;
+      }
+
+      // HTML 最开始是个<div></div>
+      while (html) {
+        var textEnd = html.indexOf('<');
+
+        // 如果textEnd为0说明是一个开始标签或者结束标签
+        // 如果textEnd > 0 说明就是文本的结束位置
+        if (textEnd === 0) {
+          var startTagMatch = parseStartTag();
+          if (startTagMatch) {
+            // 解析到开始标签
+            start(startTagMatch.tagName, startTagMatch.attrs);
+            continue;
+          }
+          var endTagMatch = html.match(endTag);
+          if (endTagMatch) {
+            advance(endTagMatch[0].length);
+            end(endTagMatch[1]);
+            continue;
+          }
+        }
+        if (textEnd > 0) {
+          var text = html.substring(0, textEnd);
+          if (text) {
+            chars(text);
+            advance(text.length); // 解析到的文本
+          }
+        }
+      }
+
+      console.log(root);
+    }
     function compileToFunciton(template) {
-      console.log(template);
+      // 将template转换成AST语法树
+      parseHTML(template);
+
+      // 生成render方法 （render方法执行后的返回结果就是虚拟DOM）
     }
 
     function _typeof(obj) {
