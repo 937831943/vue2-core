@@ -271,12 +271,23 @@
   function compileToFunciton(template) {
     // 将template转换成AST语法树
     var ast = parseHTML(template);
-
     // 生成render方法 （render方法执行后的返回结果就是虚拟DOM）
-
-    var r = codegen(ast);
-    console.log(r);
+    var code = codegen(ast);
+    code = "with(this){return ".concat(code, "}");
+    return new Function(code);
   }
+
+  function mountComponent(vm, el) {
+    vm._update(vm._render());
+  }
+
+  // vue核心流程
+  // 1. 创造响应式数据
+  // 2. 将模板转换成AST语法树
+  // 3. 将AST语法树转换成render函数
+  // 4. 后续每次数据更新可以只执行render函数（无需再次执行AST转化过程）
+  // render函数会产生虚拟节点（使用响应式数据）
+  // 根据生成的虚拟节点创造真实的DOM
 
   // 对数组中的部分方法进行重写
 
@@ -438,7 +449,7 @@
           ops.render = render;
         }
       }
-      ops.render;
+      mountComponent(vm); // 组件的挂载
     };
   }
 
@@ -448,6 +459,7 @@
     this._init(options);
   }
   initMixin(Vue); // 拓展了init方法
+  initLifeCycle(Vue);
 
   return Vue;
 

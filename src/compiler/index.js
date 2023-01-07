@@ -62,10 +62,9 @@ function codegen(ast) {
 
 export function compileToFunciton(template) {
     // 将template转换成AST语法树
-    let ast = parseHTML(template);
-
+    const ast = parseHTML(template);
     // 生成render方法 （render方法执行后的返回结果就是虚拟DOM）
-
-    let r = codegen(ast);
-    console.log(r);
+    let code = codegen(ast);
+    code = `with(this){return ${code}}`;
+    return new Function(code);
 }

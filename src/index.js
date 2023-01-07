@@ -6,5 +6,6 @@ function Vue(options) { // options就是用户的选项
 }
 
 initMixin(Vue); // 拓展了init方法
+initLifeCycle(Vue);
 
 export default Vue;
