@@ -277,7 +277,95 @@
     return new Function(code);
   }
 
+  function createElementVNode(vm, tag, data) {
+    if (data == null) {
+      data = {};
+    }
+    var key = data.key;
+    if (key) {
+      delete data.key;
+    }
+    for (var _len = arguments.length, children = new Array(_len > 3 ? _len - 3 : 0), _key = 3; _key < _len; _key++) {
+      children[_key - 3] = arguments[_key];
+    }
+    return vnode(vm, tag, key, data, children);
+  }
+  function createTextVNode(vm, text) {
+    return vnode(vm, undefined, undefined, undefined, undefined, text);
+  }
+  function vnode(vm, tag, key, data, children, text) {
+    return {
+      vm: vm,
+      tag: tag,
+      key: key,
+      data: data,
+      children: children,
+      text: text
+    };
+  }
+
+  function createElm(vnode) {
+    var tag = vnode.tag,
+      data = vnode.data,
+      children = vnode.children,
+      text = vnode.text;
+    if (typeof tag === 'string') {
+      // 这里将真实节点和虚拟节点对应起来，后续如果修改属性了
+      vnode.el = document.createElement(tag);
+      patchProps(vnode.el, data);
+      children.forEach(function (child) {
+        vnode.el.appendChild(createElm(child));
+      });
+    } else {
+      vnode.el = document.createTextNode(text);
+    }
+    return vnode.el;
+  }
+  function patchProps(el, props) {
+    for (var key in props) {
+      if (key === 'style') {
+        for (var styleName in props.style) {
+          el.style[styleName] = props.style[styleName];
+        }
+      } else {
+        el.setAttribute(key, props[key]);
+      }
+    }
+  }
+  function patch(oldVNode, vnode) {
+    var isRealElement = oldVNode.nodeType;
+    if (isRealElement) {
+      // 初渲染流程
+      var elm = oldVNode; // 获取真实元素
+      var parentElm = elm.parentNode; // 拿到父元素
+      var newElm = createElm(vnode);
+      parentElm.insertBefore(newElm, elm.nextSibling);
+      parentElm.removeChild(elm);
+      return newElm;
+    }
+  }
+  function initLifeCycle(Vue) {
+    Vue.prototype._update = function (vnode) {
+      var vm = this;
+      var el = vm.$el;
+      vm.$el = patch(el, vnode);
+    };
+    Vue.prototype._c = function () {
+      return createElementVNode.apply(void 0, [this].concat(Array.prototype.slice.call(arguments)));
+    };
+    Vue.prototype._v = function () {
+      return createTextVNode.apply(void 0, [this].concat(Array.prototype.slice.call(arguments)));
+    };
+    Vue.prototype._s = function (value) {
+      if (_typeof(value) !== 'object') return value;
+      return JSON.stringify(value);
+    };
+    Vue.prototype._render = function () {
+      return this.$options.render.call(this);
+    };
+  }
   function mountComponent(vm, el) {
+    vm.$el = el;
     vm._update(vm._render());
   }
 
@@ -449,7 +537,7 @@
           ops.render = render;
         }
       }
-      mountComponent(vm); // 组件的挂载
+      mountComponent(vm, el); // 组件的挂载
     };
   }
 
