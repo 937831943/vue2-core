@@ -277,6 +277,77 @@
     return new Function(code);
   }
 
+  var id$1 = 0;
+  var Dep = /*#__PURE__*/function () {
+    function Dep() {
+      _classCallCheck(this, Dep);
+      this.id = id$1++;
+      // 这里存放着当前属性对应的watcher有哪些
+      this.subs = [];
+    }
+    _createClass(Dep, [{
+      key: "depend",
+      value: function depend() {
+        // this.subs.push(Dep.target);
+        Dep.target.addDep(this);
+      }
+    }, {
+      key: "addSub",
+      value: function addSub(watcher) {
+        this.subs.push(watcher);
+      }
+    }, {
+      key: "notify",
+      value: function notify() {
+        this.subs.forEach(function (watcher) {
+          return watcher.update();
+        });
+      }
+    }]);
+    return Dep;
+  }();
+  Dep.target = null;
+
+  var id = 0;
+  // 不同的组件有不同的watcher
+  var Watcher = /*#__PURE__*/function () {
+    function Watcher(vm, fn, options) {
+      _classCallCheck(this, Watcher);
+      this.id = id++;
+      this.renderWatcher = options;
+
+      // getter意味着调用这个函数可以发生取值操作
+      this.getter = fn;
+      this.deps = [];
+      this.depsId = new Set();
+      this.get();
+    }
+    _createClass(Watcher, [{
+      key: "addDep",
+      value: function addDep(dep) {
+        var id = dep.id;
+        if (!this.depsId.has(id)) {
+          this.deps.push(dep);
+          this.depsId.add(id);
+          dep.addSub(this);
+        }
+      }
+    }, {
+      key: "get",
+      value: function get() {
+        Dep.target = this;
+        this.getter();
+        Dep.target = null;
+      }
+    }, {
+      key: "update",
+      value: function update() {
+        this.get();
+      }
+    }]);
+    return Watcher;
+  }();
+
   function createElementVNode(vm, tag, data) {
     if (data == null) {
       data = {};
@@ -366,7 +437,11 @@
   }
   function mountComponent(vm, el) {
     vm.$el = el;
-    vm._update(vm._render());
+    var updateComponent = function updateComponent() {
+      vm._update(vm._render());
+    };
+    var watcher = new Watcher(vm, updateComponent, true);
+    console.log(watcher);
   }
 
   // vue核心流程
@@ -449,14 +524,19 @@
   function defineReactive(target, key, value) {
     // 闭包
     observe(value);
+    var dep = new Dep();
     Object.defineProperty(target, key, {
       get: function get() {
+        if (Dep.target) {
+          dep.depend();
+        }
         return value;
       },
       set: function set(newValue) {
         if (newValue === value) return;
         observe(newValue);
         value = newValue;
+        dep.notify();
       }
     });
   }

@@ -1,3 +1,4 @@
+import Watcher from "./observe/watcher";
 import { createElementVNode, createTextVNode } from "./vdom"
 
 function createElm(vnode) {
@@ -65,7 +66,13 @@ export function initLifeCycle(Vue) {
 
 export function mountComponent(vm, el) {
     vm.$el = el;
-    vm._update(vm._render())
+    const updateComponent = () => {
+        vm._update(vm._render())
+    }
+
+
+    const watcher = new Watcher(vm, updateComponent, true);
+    console.log(watcher);
 }
 
 // vue核心流程
