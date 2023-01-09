@@ -342,11 +342,80 @@
     }, {
       key: "update",
       value: function update() {
+        queueWatcher(this);
+      }
+    }, {
+      key: "run",
+      value: function run() {
         this.get();
       }
     }]);
     return Watcher;
   }();
+  var queue = [];
+  var has = {};
+  var pending = false;
+  function flushSchedulerQueue() {
+    var flushQueue = queue.slice(0);
+    queue = [];
+    has = {};
+    pending = false;
+    flushQueue.forEach(function (q) {
+      return q.run();
+    });
+  }
+  function queueWatcher(watcher) {
+    var id = watcher.id;
+    if (!has[id]) {
+      queue.push(watcher);
+      has[id] = true;
+      if (!pending) {
+        nextTick(flushSchedulerQueue);
+        pending = true;
+      }
+    }
+  }
+  var callbacks = [];
+  var waiting = false;
+  function flushCallBacks() {
+    console.log('run');
+    waiting = false;
+    var cbs = callbacks.slice(0);
+    callbacks = [];
+    cbs.forEach(function (cb) {
+      return cb();
+    });
+  }
+  var timerFun;
+  if (Promise) {
+    timerFun = function timerFun() {
+      Promise.resolve().then(flushCallBacks);
+    };
+  } else if (MutationObserver) {
+    var observer = new MutationObserver(flushCallBacks);
+    var textNode = document.createTextNode(1);
+    observer.observe(textNode, {
+      characterData: true
+    });
+    timerFun = function timerFun() {
+      textNode.textContent = 2;
+    };
+  } else if (setImmediate) {
+    timerFun = function timerFun() {
+      setImmediate(flushCallBacks);
+    };
+  } else {
+    timerFun = function timerFun() {
+      setTimeout(flushCallBacks);
+    };
+  }
+  function nextTick(cb) {
+    callbacks.push(cb);
+    if (!waiting) {
+      timerFun();
+      waiting = true;
+    }
+  }
 
   function createElementVNode(vm, tag, data) {
     if (data == null) {
@@ -626,6 +695,7 @@
     // options就是用户的选项
     this._init(options);
   }
+  Vue.prototype.$nextTick = nextTick;
   initMixin(Vue); // 拓展了init方法
   initLifeCycle(Vue);
 

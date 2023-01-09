@@ -27,6 +27,76 @@ export default class Watcher {
         Dep.target = null;
     }
     update() {
+        queueWatcher(this);
+    }
+    run() {
         this.get();
+    }
+}
+
+let queue = [];
+let has = {};
+let pending = false;
+
+function flushSchedulerQueue() {
+    const flushQueue = queue.slice(0);
+    queue = [];
+    has = {};
+    pending = false;
+    flushQueue.forEach(q => q.run());
+}
+
+function queueWatcher(watcher) {
+    const id = watcher.id;
+    if (!has[id]) {
+        queue.push(watcher);
+        has[id] = true;
+        if (!pending) {
+            nextTick(flushSchedulerQueue);
+            pending = true;
+        }
+    }
+}
+
+let callbacks = [];
+let waiting = false;
+
+function flushCallBacks() {
+    console.log('run');
+    waiting = false;
+    let cbs = callbacks.slice(0);
+    callbacks = [];
+    cbs.forEach(cb => cb());
+}
+
+let timerFun;
+if (Promise) {
+    timerFun = () => {
+        Promise.resolve().then(flushCallBacks);
+    }
+} else if (MutationObserver) {
+    const observer = new MutationObserver(flushCallBacks);
+    const textNode = document.createTextNode(1);
+    observer.observe(textNode, {
+        characterData: true
+    });
+    timerFun = () => {
+        textNode.textContent = 2;
+    }
+} else if (setImmediate) {
+    timerFun = () => {
+        setImmediate(flushCallBacks);
+    }
+} else {
+    timerFun = () => {
+        setTimeout(flushCallBacks);
+    }
+}
+
+export function nextTick(cb) {
+    callbacks.push(cb);
+    if (!waiting) {
+        timerFun();
+        waiting = true;
     }
 }
