@@ -62,7 +62,6 @@ let callbacks = [];
 let waiting = false;
 
 function flushCallBacks() {
-    console.log('run');
     waiting = false;
     let cbs = callbacks.slice(0);
     callbacks = [];

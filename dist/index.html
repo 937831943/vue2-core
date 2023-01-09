@@ -7,33 +7,19 @@
     <title>Document</title>
 </head>
 <body>
-    <div id="app" style="color:red;background:yellow;">
-            {{name}}  {{age}}  {{name}}   {{name}}
-        <li> world </li>
-    </div>
+    <div id="app">{{arr}}</div>
     <script src="vue.js"></script>
     <script>
         const vm = new Vue({
             el: '#app',
             data() {
                 return {
-                    name: 'zf',
-                    age: 20,
-                    address: {
-                        num: 30,
-                        content: '回龙观'
-                    },
-                    hobby: ['eat', 'drank', {a:1}]
+                    arr: [1,2,3, { a: 1 }, ['a', 'b',[]]]
                 }
             }
         })
-        setTimeout(() => {
-            vm.age = 30;
-            vm.age = 40;
-            vm.age = 50;
-            vm.age = 60;
-            // vm._update(vm._render())
-        }, 1000)
+        vm.arr[4][2].push('c')
+        
     </script>
 </body>
 </html>

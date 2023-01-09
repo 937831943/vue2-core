@@ -70,9 +70,7 @@ export function mountComponent(vm, el) {
         vm._update(vm._render())
     }
 
-
-    const watcher = new Watcher(vm, updateComponent, true);
-    console.log(watcher);
+    new Watcher(vm, updateComponent, true);
 }
 
 // vue核心流程

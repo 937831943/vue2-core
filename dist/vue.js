@@ -378,7 +378,6 @@
   var callbacks = [];
   var waiting = false;
   function flushCallBacks() {
-    console.log('run');
     waiting = false;
     var cbs = callbacks.slice(0);
     callbacks = [];
@@ -509,8 +508,7 @@
     var updateComponent = function updateComponent() {
       vm._update(vm._render());
     };
-    var watcher = new Watcher(vm, updateComponent, true);
-    console.log(watcher);
+    new Watcher(vm, updateComponent, true);
   }
 
   // vue核心流程
@@ -550,6 +548,7 @@
       if (inserted) {
         ob.observeArray(inserted);
       }
+      ob.dep.notify();
       return (_oldArrayPrototype$me = oldArrayPrototype[method]).call.apply(_oldArrayPrototype$me, [this].concat(args));
     };
   });
@@ -557,15 +556,14 @@
   var Observer = /*#__PURE__*/function () {
     function Observer(data) {
       _classCallCheck(this, Observer);
+      this.dep = new Dep();
       // Object.defineProperty只能劫持已经存在的属性（Vue里面会为此单独写一些API $set $delete等）
-
       Object.defineProperty(data, '__ob__', {
         value: this,
         enumerable: false
       });
       if (Array.isArray(data)) {
         // 重写数组的七个变异方法
-
         data.__proto__ = newArrayPrototype;
         this.observeArray(data);
       } else {
@@ -590,14 +588,29 @@
     }]);
     return Observer;
   }();
+  function dependArray(value) {
+    value.forEach(function (i) {
+      var _i$__ob__;
+      (_i$__ob__ = i.__ob__) === null || _i$__ob__ === void 0 ? void 0 : _i$__ob__.dep.depend();
+      if (Array.isArray(i)) {
+        dependArray(i);
+      }
+    });
+  }
   function defineReactive(target, key, value) {
     // 闭包
-    observe(value);
+    var childOb = observe(value);
     var dep = new Dep();
     Object.defineProperty(target, key, {
       get: function get() {
         if (Dep.target) {
           dep.depend();
+          if (childOb) {
+            childOb.dep.depend();
+            if (Array.isArray(value)) {
+              dependArray(value);
+            }
+          }
         }
         return value;
       },
