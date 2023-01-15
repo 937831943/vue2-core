@@ -7,19 +7,15 @@
     <title>Document</title>
 </head>
 <body>
-    <div id="app">{{arr}}</div>
+    <div id="app"></div>
     <script src="vue.js"></script>
     <script>
         const vm = new Vue({
             el: '#app',
-            data() {
-                return {
-                    arr: [1,2,3, { a: 1 }, ['a', 'b',[]]]
-                }
+            created() {
+                console.log(3);
             }
         })
-        vm.arr[4][2].push('c')
-        
     </script>
 </body>
 </html>

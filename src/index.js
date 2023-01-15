@@ -1,3 +1,4 @@
+import { initGlobalAPI } from "./globalAPI";
 import { initMixin } from "./init";
 import { initLifeCycle } from "./lifecycle";
 import { nextTick } from "./observe/watcher";
@@ -11,5 +12,7 @@ Vue.prototype.$nextTick = nextTick;
 
 initMixin(Vue); // 拓展了init方法
 initLifeCycle(Vue);
+initGlobalAPI(Vue);
+
 
 export default Vue;
