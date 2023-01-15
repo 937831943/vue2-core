@@ -1,9 +1,14 @@
 import { observe } from "./observe";
+import { Dep } from "./observe/dep";
+import Watcher from "./observe/watcher";
 
 export function initState(vm) {
     const opts = vm.$options; // 获取所有的选项
     if (opts.data) {
         initData(vm);
+    }
+    if (opts.computed) {
+        initComputed(vm);
     }
 }
 
@@ -33,3 +38,36 @@ function initData(vm) {
 
 }
 
+function initComputed(vm) {
+    const computed = vm.$options.computed;
+    const watchers = vm._computedWatchers = {};
+    for (const key in computed) {
+        const userDef = computed[key];
+        let fn = typeof userDef === 'function' ? userDef : userDef.get;
+        watchers[key] = new Watcher(vm, fn, { lazy: true });
+        difineComputed(vm, key, userDef);
+    }
+
+}
+
+function difineComputed(target, key, userDef) {
+    // const getter = typeof userDef === 'function' ? userDef : userDef.get;
+    const setter = userDef.set || (() => { });
+    Object.defineProperty(target, key, {
+        get: createComputedGetter(key),
+        set: setter
+    })
+}
+
+function createComputedGetter(key) {
+    return function () {
+        const watcher = this._computedWatchers[key];
+        if (watcher.dirty) {
+            watcher.evaluate();
+        }
+        if (Dep.target) {
+            watcher.depend();
+        }
+        return watcher.value;
+    }
+}

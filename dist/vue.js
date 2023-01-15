@@ -351,6 +351,15 @@
       return Dep;
     }();
     Dep.target = null;
+    var stack = [];
+    function pushTarget(watcher) {
+      stack.push(watcher);
+      Dep.target = watcher;
+    }
+    function popTarget() {
+      stack.pop();
+      Dep.target = stack[stack.length - 1];
+    }
 
     var id = 0;
     // 不同的组件有不同的watcher
@@ -359,12 +368,14 @@
         _classCallCheck(this, Watcher);
         this.id = id++;
         this.renderWatcher = options;
-
         // getter意味着调用这个函数可以发生取值操作
         this.getter = fn;
         this.deps = [];
         this.depsId = new Set();
-        this.get();
+        this.lazy = options.lazy;
+        this.dirty = this.lazy;
+        this.vm = vm;
+        this.lazy ? undefined : this.get();
       }
       _createClass(Watcher, [{
         key: "addDep",
@@ -377,16 +388,34 @@
           }
         }
       }, {
+        key: "evaluate",
+        value: function evaluate() {
+          this.value = this.get();
+          this.dirty = false;
+        }
+      }, {
         key: "get",
         value: function get() {
-          Dep.target = this;
-          this.getter();
-          Dep.target = null;
+          pushTarget(this);
+          var value = this.getter.call(this.vm);
+          popTarget();
+          return value;
+        }
+      }, {
+        key: "depend",
+        value: function depend() {
+          this.deps.forEach(function (dep) {
+            return dep.depend();
+          });
         }
       }, {
         key: "update",
         value: function update() {
-          queueWatcher(this);
+          if (this.lazy) {
+            this.dirty = true;
+          } else {
+            queueWatcher(this);
+          }
         }
       }, {
         key: "run",
@@ -695,6 +724,9 @@
       if (opts.data) {
         initData(vm);
       }
+      if (opts.computed) {
+        initComputed(vm);
+      }
     }
     function proxy(vm, target, key) {
       Object.defineProperty(vm, key, {
@@ -719,6 +751,38 @@
         }
       }
     }
+    function initComputed(vm) {
+      var computed = vm.$options.computed;
+      var watchers = vm._computedWatchers = {};
+      for (var key in computed) {
+        var userDef = computed[key];
+        var fn = typeof userDef === 'function' ? userDef : userDef.get;
+        watchers[key] = new Watcher(vm, fn, {
+          lazy: true
+        });
+        difineComputed(vm, key, userDef);
+      }
+    }
+    function difineComputed(target, key, userDef) {
+      // const getter = typeof userDef === 'function' ? userDef : userDef.get;
+      var setter = userDef.set || function () {};
+      Object.defineProperty(target, key, {
+        get: createComputedGetter(key),
+        set: setter
+      });
+    }
+    function createComputedGetter(key) {
+      return function () {
+        var watcher = this._computedWatchers[key];
+        if (watcher.dirty) {
+          watcher.evaluate();
+        }
+        if (Dep.target) {
+          watcher.depend();
+        }
+        return watcher.value;
+      };
+    }
 
     function initMixin(Vue) {
       // 给Vue增加init方法
@@ -729,7 +793,7 @@
         vm.$options = mergeOptinons(this.constructor.options, options); // 将用户的选项挂载到实例上
 
         callHook(vm, 'beforeCreate');
-        // 初始化状态
+        // 初始化状态 计算属性 watch
         initState(vm);
         callHook(vm, 'created');
         if (options.el) {

@@ -10,7 +10,7 @@ export function initMixin(Vue) { // 给Vue增加init方法
         vm.$options = mergeOptinons(this.constructor.options, options); // 将用户的选项挂载到实例上
 
         callHook(vm, 'beforeCreate');
-        // 初始化状态
+        // 初始化状态 计算属性 watch
         initState(vm);
         callHook(vm, 'created');
 

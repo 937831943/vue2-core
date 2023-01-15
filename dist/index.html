@@ -7,15 +7,40 @@
     <title>Document</title>
 </head>
 <body>
-    <div id="app"></div>
+    <div id="app">
+        {{fullname}} {{fullname}} {{fullname}}
+    </div>
     <script src="vue.js"></script>
     <script>
         const vm = new Vue({
             el: '#app',
-            created() {
-                console.log(3);
+            data: {
+                fistname: '卧',
+                lastname: '槽',
+                age: 13,
+            },
+            computed: {
+                newName() {
+                    return this.age;
+                },
+                fullname() {
+                    console.log(1);
+                    return this.fistname + this.lastname + this.newName;
+                }
+                // fullname: {
+                //     get() {
+                //         return this.lastname + this.lastname;
+                //     },
+                //     set() {
+                //         console.log(1);
+                //     }
+                    
+                // }
             }
         })
+        setTimeout(() => {
+            vm.age = '14'
+        },1000)
     </script>
 </body>
 </html>

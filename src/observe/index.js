@@ -1,5 +1,5 @@
 import { newArrayPrototype } from "./array";
-import Dep from "./dep";
+import { Dep } from "./dep";
 
 class Observer {
     constructor(data) {

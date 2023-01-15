@@ -1,4 +1,4 @@
-import Dep from "./dep";
+import { Dep, popTarget, pushTarget } from "./dep";
 
 let id = 0;
 // 不同的组件有不同的watcher
@@ -6,12 +6,14 @@ export default class Watcher {
     constructor(vm, fn, options) {
         this.id = id++;
         this.renderWatcher = options;
-
         // getter意味着调用这个函数可以发生取值操作
         this.getter = fn;
         this.deps = [];
         this.depsId = new Set();
-        this.get();
+        this.lazy = options.lazy;
+        this.dirty = this.lazy;
+        this.vm = vm;
+        this.lazy ? undefined : this.get();
     }
     addDep(dep) {
         let id = dep.id;
@@ -21,13 +23,25 @@ export default class Watcher {
             dep.addSub(this);
         }
     }
+    evaluate() {
+        this.value = this.get();
+        this.dirty = false;
+    }
     get() {
-        Dep.target = this;
-        this.getter();
-        Dep.target = null;
+        pushTarget(this);
+        const value = this.getter.call(this.vm);
+        popTarget();
+        return value;
+    }
+    depend() {
+        this.deps.forEach(dep => dep.depend());
     }
     update() {
-        queueWatcher(this);
+        if (this.lazy) {
+            this.dirty = true;
+        } else {
+            queueWatcher(this);
+        }
     }
     run() {
         this.get();
