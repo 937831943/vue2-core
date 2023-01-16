@@ -3,17 +3,25 @@ import { Dep, popTarget, pushTarget } from "./dep";
 let id = 0;
 // 不同的组件有不同的watcher
 export default class Watcher {
-    constructor(vm, fn, options) {
+    constructor(vm, exprOrFn, options, cb) {
         this.id = id++;
         this.renderWatcher = options;
-        // getter意味着调用这个函数可以发生取值操作
-        this.getter = fn;
+        if (typeof exprOrFn === 'string') {
+            this.getter = function () {
+                return vm[exprOrFn];
+            }
+        } else {
+            // getter意味着调用这个函数可以发生取值操作
+            this.getter = exprOrFn;
+        }
         this.deps = [];
         this.depsId = new Set();
         this.lazy = options.lazy;
+        this.cb = cb;
         this.dirty = this.lazy;
         this.vm = vm;
-        this.lazy ? undefined : this.get();
+        this.user = options.user;
+        this.value = this.lazy ? undefined : this.get();
     }
     addDep(dep) {
         let id = dep.id;
@@ -44,7 +52,11 @@ export default class Watcher {
         }
     }
     run() {
-        this.get();
+        const oldValue = this.value;
+        const newValue = this.get();
+        if (this.user) {
+            this.cb.call(this.vm, newValue, oldValue);
+        }
     }
 }
 

@@ -10,6 +10,28 @@ export function initState(vm) {
     if (opts.computed) {
         initComputed(vm);
     }
+    if (opts.watch) {
+        initWatch(vm);
+    }
+}
+
+function initWatch(vm) {
+    const watch = vm.$options.watch;
+    for (const key in watch) {
+        const handler = watch[key];
+        if (Array.isArray(handler)) {
+            handler.forEach(i => createWatch(vm, key, i));
+        } else {
+            createWatch(vm, key, handler);
+        }
+    }
+}
+
+function createWatch(vm, key, handler) {
+    if (typeof handler === 'string') {
+        handler = vm[handler];
+    }
+    return vm.$watch(key, handler);
 }
 
 function proxy(vm, target, key) {

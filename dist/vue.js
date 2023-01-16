@@ -364,18 +364,26 @@
     var id = 0;
     // 不同的组件有不同的watcher
     var Watcher = /*#__PURE__*/function () {
-      function Watcher(vm, fn, options) {
+      function Watcher(vm, exprOrFn, options, cb) {
         _classCallCheck(this, Watcher);
         this.id = id++;
         this.renderWatcher = options;
-        // getter意味着调用这个函数可以发生取值操作
-        this.getter = fn;
+        if (typeof exprOrFn === 'string') {
+          this.getter = function () {
+            return vm[exprOrFn];
+          };
+        } else {
+          // getter意味着调用这个函数可以发生取值操作
+          this.getter = exprOrFn;
+        }
         this.deps = [];
         this.depsId = new Set();
         this.lazy = options.lazy;
+        this.cb = cb;
         this.dirty = this.lazy;
         this.vm = vm;
-        this.lazy ? undefined : this.get();
+        this.user = options.user;
+        this.value = this.lazy ? undefined : this.get();
       }
       _createClass(Watcher, [{
         key: "addDep",
@@ -420,7 +428,11 @@
       }, {
         key: "run",
         value: function run() {
-          this.get();
+          var oldValue = this.value;
+          var newValue = this.get();
+          if (this.user) {
+            this.cb.call(this.vm, newValue, oldValue);
+          }
         }
       }]);
       return Watcher;
@@ -727,6 +739,31 @@
       if (opts.computed) {
         initComputed(vm);
       }
+      if (opts.watch) {
+        initWatch(vm);
+      }
+    }
+    function initWatch(vm) {
+      var watch = vm.$options.watch;
+      var _loop = function _loop(key) {
+        var handler = watch[key];
+        if (Array.isArray(handler)) {
+          handler.forEach(function (i) {
+            return createWatch(vm, key, i);
+          });
+        } else {
+          createWatch(vm, key, handler);
+        }
+      };
+      for (var key in watch) {
+        _loop(key);
+      }
+    }
+    function createWatch(vm, key, handler) {
+      if (typeof handler === 'string') {
+        handler = vm[handler];
+      }
+      return vm.$watch(key, handler);
     }
     function proxy(vm, target, key) {
       Object.defineProperty(vm, key, {
@@ -831,6 +868,11 @@
     initMixin(Vue); // 拓展了init方法
     initLifeCycle(Vue);
     initGlobalAPI(Vue);
+    Vue.prototype.$watch = function (exprOrFn, cb) {
+      new Watcher(this, exprOrFn, {
+        user: true
+      }, cb);
+    };
 
     return Vue;
 
