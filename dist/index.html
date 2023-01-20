@@ -7,31 +7,12 @@
     <title>Document</title>
 </head>
 <body>
-    <div id="app">
-        {{fistname}}
-    </div>
+    <div id="app"></div>
     <script src="vue.js"></script>
     <script>
         const vm = new Vue({
             el: '#app',
-            data: {
-                fistname: '卧',
-                lastname: '槽',
-                age: 13,
-            },
-            watch: {
-                fistname(newValue, oldValue) {
-                    console.log(newValue, oldValue);
-                }
-                // fistname: [
-                //     () => {},
-                // ]
-            }
         })
-        setTimeout(() => {
-            vm.fistname = 'xx'
-        }, 1000)
-        
     </script>
 </body>
 </html>
