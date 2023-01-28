@@ -20,16 +20,19 @@ const render1 = compileToFunciton(`<ul>
 <li key="a">a</li>
 <li key="b">b</li>
 <li key="c">c</li>
+<li key="d">d</li>
 </ul>`)
 const vm1 = new Vue({ data: { name: 'zf' } })
 const prevVnode = render1.call(vm1);
 const el = createElm(prevVnode);
 document.body.appendChild(el);
 const render2 = compileToFunciton(`<ul>
-<li key="a">a</li>
 <li key="b">b</li>
+<li key="m">m</li>
+<li key="a">a</li>
+<li key="p">p</li>
 <li key="c">c</li>
-<li key="d">d</li>
+<li key="q">q</li>
 </ul>`)
 const vm2 = new Vue({ data: { name: 'zf' } })
 const nextVnode = render2.call(vm2);

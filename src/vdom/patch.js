@@ -15,7 +15,7 @@ export function createElm(vnode) {
     return vnode.el;
 }
 
-export function patchProps(el, oldProps, props) {
+export function patchProps(el, oldProps = {}, props = {}) {
 
     // 老的属性中有， 新的没有，要删除老的
     const oldStyles = oldProps.style || {};
@@ -109,14 +109,66 @@ function updateChildren(el, oldChildren, newChildren) {
     let newStartVnode = newChildren[0];
     let oldEndVnode = oldChildren[oldEndIndex];
     let newEndVnode = newChildren[newEndIndex];
-    console.log(oldStartVnode);
-    console.log(newStartVnode);
-    console.log(oldEndVnode);
-    console.log(newEndVnode);
+
+    function makeIndexByKey(children) {
+        let map = {};
+        children.forEach((child, index) => {
+            map[child.key] = index;
+        });
+        return map;
+    }
+
+    let map = makeIndexByKey(oldChildren);
+
     while (oldStartIndex <= oldEndIndex && newStartIndex <= newEndIndex) {
-        console.log(oldStartVnode);
-        console.log(newStartVnode);
-        console.log(oldEndVnode);
-        console.log(newEndVnode);
+        if (!oldStartVnode) {
+            oldStartVnode = oldChildren[++oldStartIndex];
+        } else if (!oldEndVnode) {
+            oldEndVnode = oldChildren[--oldEndIndex];
+        } else if (isSameVnode(oldStartVnode, newStartVnode)) { // 头头比对
+            patchVnode(oldStartVnode, newStartVnode);
+            oldStartVnode = oldChildren[++oldStartIndex];
+            newStartVnode = newChildren[++newStartIndex];
+        } else if (isSameVnode(oldEndVnode, newEndVnode)) { // 尾尾比对
+            patchVnode(oldEndVnode, newEndVnode);
+            oldEndVnode = oldChildren[--oldEndIndex];
+            newEndVnode = newChildren[--newEndIndex];
+        } else if (isSameVnode(oldEndVnode, newStartVnode)) { // 交叉比对
+            patchVnode(oldEndVnode, newStartVnode);
+            el.insertBefore(oldEndVnode.el, oldStartVnode.el);
+            oldEndVnode = oldChildren[--oldEndIndex];
+            newStartVnode = newChildren[++newStartIndex];
+        } else if (isSameVnode(oldStartVnode, newEndVnode)) { // 交叉比对
+            patchVnode(oldStartVnode, newEndVnode);
+            el.insertBefore(oldStartVnode.el, oldEndVnode.el.nextSibling);
+            oldStartVnode = oldChildren[++oldStartIndex];
+            newEndVnode = newChildren[--newEndIndex];
+        } else {
+            let moveIndex = map[newStartVnode.key];
+            if (moveIndex !== undefined) {
+                let moveVnode = oldChildren[moveIndex];
+                el.insertBefore(moveVnode.el, oldStartVnode.el);
+                oldChildren[moveIndex] = undefined;
+                patchVnode(moveVnode, newStartVnode);
+            } else {
+                el.insertBefore(createElm(newStartVnode), oldStartVnode.el);
+            }
+            newStartVnode = newChildren[++newStartIndex];
+        }
+    }
+    if (newStartIndex <= newEndIndex) {
+        for (let i = newStartIndex; i <= newEndIndex; i++) {
+            let chiledEl = createElm(newChildren[i]);
+            let anchor = newChildren[newEndIndex + 1] ? newChildren[newEndIndex + 1].el : null;
+            el.insertBefore(chiledEl, anchor);
+        }
+    }
+    if (oldStartIndex <= oldEndIndex) {
+        for (let i = oldStartIndex; i <= oldEndIndex; i++) {
+            if (oldChildren[i]) {
+                let chiledEl = oldChildren[i].el;
+                el.removeChild(chiledEl);
+            }
+        }
     }
 }

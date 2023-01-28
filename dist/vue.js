@@ -548,7 +548,9 @@
     }
     return vnode.el;
   }
-  function patchProps(el, oldProps, props) {
+  function patchProps(el) {
+    var oldProps = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+    var props = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
     // 老的属性中有， 新的没有，要删除老的
     var oldStyles = oldProps.style || {};
     var newStyles = props.style || {};
@@ -638,15 +640,68 @@
     var newStartVnode = newChildren[0];
     var oldEndVnode = oldChildren[oldEndIndex];
     var newEndVnode = newChildren[newEndIndex];
-    console.log(oldStartVnode);
-    console.log(newStartVnode);
-    console.log(oldEndVnode);
-    console.log(newEndVnode);
+    function makeIndexByKey(children) {
+      var map = {};
+      children.forEach(function (child, index) {
+        map[child.key] = index;
+      });
+      return map;
+    }
+    var map = makeIndexByKey(oldChildren);
     while (oldStartIndex <= oldEndIndex && newStartIndex <= newEndIndex) {
-      console.log(oldStartVnode);
-      console.log(newStartVnode);
-      console.log(oldEndVnode);
-      console.log(newEndVnode);
+      if (!oldStartVnode) {
+        oldStartVnode = oldChildren[++oldStartIndex];
+      } else if (!oldEndVnode) {
+        oldEndVnode = oldChildren[--oldEndIndex];
+      } else if (isSameVnode(oldStartVnode, newStartVnode)) {
+        // 头头比对
+        patchVnode(oldStartVnode, newStartVnode);
+        oldStartVnode = oldChildren[++oldStartIndex];
+        newStartVnode = newChildren[++newStartIndex];
+      } else if (isSameVnode(oldEndVnode, newEndVnode)) {
+        // 尾尾比对
+        patchVnode(oldEndVnode, newEndVnode);
+        oldEndVnode = oldChildren[--oldEndIndex];
+        newEndVnode = newChildren[--newEndIndex];
+      } else if (isSameVnode(oldEndVnode, newStartVnode)) {
+        // 交叉比对
+        patchVnode(oldEndVnode, newStartVnode);
+        el.insertBefore(oldEndVnode.el, oldStartVnode.el);
+        oldEndVnode = oldChildren[--oldEndIndex];
+        newStartVnode = newChildren[++newStartIndex];
+      } else if (isSameVnode(oldStartVnode, newEndVnode)) {
+        // 交叉比对
+        patchVnode(oldStartVnode, newEndVnode);
+        el.insertBefore(oldStartVnode.el, oldEndVnode.el.nextSibling);
+        oldStartVnode = oldChildren[++oldStartIndex];
+        newEndVnode = newChildren[--newEndIndex];
+      } else {
+        var moveIndex = map[newStartVnode.key];
+        if (moveIndex !== undefined) {
+          var moveVnode = oldChildren[moveIndex];
+          el.insertBefore(moveVnode.el, oldStartVnode.el);
+          oldChildren[moveIndex] = undefined;
+          patchVnode(moveVnode, newStartVnode);
+        } else {
+          el.insertBefore(createElm(newStartVnode), oldStartVnode.el);
+        }
+        newStartVnode = newChildren[++newStartIndex];
+      }
+    }
+    if (newStartIndex <= newEndIndex) {
+      for (var i = newStartIndex; i <= newEndIndex; i++) {
+        var chiledEl = createElm(newChildren[i]);
+        var anchor = newChildren[newEndIndex + 1] ? newChildren[newEndIndex + 1].el : null;
+        el.insertBefore(chiledEl, anchor);
+      }
+    }
+    if (oldStartIndex <= oldEndIndex) {
+      for (var _i = oldStartIndex; _i <= oldEndIndex; _i++) {
+        if (oldChildren[_i]) {
+          var _chiledEl = oldChildren[_i].el;
+          el.removeChild(_chiledEl);
+        }
+      }
     }
   }
 
@@ -958,7 +1013,7 @@
   initLifeCycle(Vue);
   initGlobalAPI(Vue);
   initStateMixin(Vue);
-  var render1 = compileToFunciton("<ul>\n<li key=\"a\">a</li>\n<li key=\"b\">b</li>\n<li key=\"c\">c</li>\n</ul>");
+  var render1 = compileToFunciton("<ul>\n<li key=\"a\">a</li>\n<li key=\"b\">b</li>\n<li key=\"c\">c</li>\n<li key=\"d\">d</li>\n</ul>");
   var vm1 = new Vue({
     data: {
       name: 'zf'
@@ -967,7 +1022,7 @@
   var prevVnode = render1.call(vm1);
   var el = createElm(prevVnode);
   document.body.appendChild(el);
-  var render2 = compileToFunciton("<ul>\n<li key=\"a\">a</li>\n<li key=\"b\">b</li>\n<li key=\"c\">c</li>\n<li key=\"d\">d</li>\n</ul>");
+  var render2 = compileToFunciton("<ul>\n<li key=\"b\">b</li>\n<li key=\"m\">m</li>\n<li key=\"a\">a</li>\n<li key=\"p\">p</li>\n<li key=\"c\">c</li>\n<li key=\"q\">q</li>\n</ul>");
   var vm2 = new Vue({
     data: {
       name: 'zf'
