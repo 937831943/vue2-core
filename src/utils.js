@@ -11,6 +11,17 @@ LIFECYCLE.forEach(hook => {
         return p;
     }
 });
+
+strats.components = function (parentVal, childVal) {
+    const res = Object.create(parentVal);
+    if (childVal) {
+        for (const key in childVal) {
+            res[key] = childVal[key];
+        }
+    }
+    return res;
+}
+
 export function mergeOptinons(parent, child) {
     const options = {};
     function mergeField(key) {
