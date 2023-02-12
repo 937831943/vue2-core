@@ -49,7 +49,9 @@
 
     function initGlobalAPI(Vue) {
       // 静态方法
-      Vue.options = {};
+      Vue.options = {
+        _base: Vue
+      };
       Vue.mixin = function (mixin) {
         // 我们希望将用户的选项和全局的Options进行合并
         this.options = mergeOptinons(this.options, mixin);
@@ -553,7 +555,11 @@
         Ctor = vm.$options._base.extend(Ctor);
       }
       data.hook = {
-        init: function init() {}
+        init: function init(vnode) {
+          // 保存组件的实例到虚拟节点上
+          var instance = vnode.componentInstance = new vnode.componentOptions.Ctor();
+          instance.$mount();
+        }
       };
       return vnode(vm, tag, key, data, children, null, {
         Ctor: Ctor
@@ -577,12 +583,25 @@
       return vnode1.tag === vnode2.tag && vnode1.key === vnode2.key;
     }
 
+    function createComponent(vnode) {
+      var i = vnode.data;
+      if ((i = i.hook) && (i = i.init)) {
+        i(vnode);
+      }
+      if (vnode.componentInstance) {
+        return true;
+      }
+    }
     function createElm(vnode) {
       var tag = vnode.tag,
         data = vnode.data,
         children = vnode.children,
         text = vnode.text;
       if (typeof tag === 'string') {
+        // 创建真实元素 也要区分组件还是元素
+        if (createComponent(vnode)) {
+          return vnode.componentInstance.$el;
+        }
         // 这里将真实节点和虚拟节点对应起来，后续如果修改属性了
         vnode.el = document.createElement(tag);
         patchProps(vnode.el, {}, data);
@@ -621,6 +640,11 @@
       }
     }
     function patch(oldVNode, vnode) {
+      if (!oldVNode) {
+        // 这就是组件的挂载
+        return createElm(vnode); // vm.$el 对应的就是组件的渲染结果
+      }
+
       var isRealElement = oldVNode.nodeType;
       if (isRealElement) {
         // 初渲染流程
@@ -1043,9 +1067,7 @@
           if (!ops.template && el) {
             template = el.outerHTML;
           } else {
-            if (el) {
-              template = ops.template;
-            }
+            template = ops.template;
           }
           if (template) {
             var render = compileToFunciton(template);

@@ -1,8 +1,22 @@
 import { isSameVnode } from ".";
 
+function createComponent(vnode) {
+    let i = vnode.data;
+    if ((i = i.hook) && (i = i.init)) {
+        i(vnode);
+    }
+    if (vnode.componentInstance) {
+        return true
+    }
+}
+
 export function createElm(vnode) {
     let { tag, data, children, text } = vnode;
     if (typeof tag === 'string') {
+        // 创建真实元素 也要区分组件还是元素
+        if (createComponent(vnode)) {
+            return vnode.componentInstance.$el;
+        }
         // 这里将真实节点和虚拟节点对应起来，后续如果修改属性了
         vnode.el = document.createElement(tag);
         patchProps(vnode.el, {}, data);
@@ -42,6 +56,11 @@ export function patchProps(el, oldProps = {}, props = {}) {
 }
 
 export function patch(oldVNode, vnode) {
+
+    if (!oldVNode) { // 这就是组件的挂载
+        return createElm(vnode); // vm.$el 对应的就是组件的渲染结果
+    }
+
     const isRealElement = oldVNode.nodeType;
     if (isRealElement) {
         // 初渲染流程

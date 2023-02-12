@@ -25,7 +25,11 @@ function createComponentVnode(vm, tag, key, data, children, Ctor) {
         Ctor = vm.$options._base.extend(Ctor);
     }
     data.hook = {
-        init() { }
+        init(vnode) {
+            // 保存组件的实例到虚拟节点上
+            let instance = vnode.componentInstance = new vnode.componentOptions.Ctor;
+            instance.$mount();
+        }
     }
     return vnode(vm, tag, key, data, children, null, { Ctor })
 }

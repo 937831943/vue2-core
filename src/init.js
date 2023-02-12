@@ -30,9 +30,7 @@ export function initMixin(Vue) { // 给Vue增加init方法
             if (!ops.template && el) {
                 template = el.outerHTML;
             } else {
-                if (el) {
-                    template = ops.template;
-                }
+                template = ops.template;
             }
 
             if (template) {
